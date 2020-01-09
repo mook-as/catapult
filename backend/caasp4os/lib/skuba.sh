@@ -161,7 +161,7 @@ skuba_updates() {
 
 _init_control_plane() {
     if ! [[ -d "$SKUBA_CLUSTER_NAME" ]]; then
-        skuba_container skuba cluster init --control-plane "$LB" "$SKUBA_CLUSTER_NAME"
+        skuba_container skuba cluster init --cloud-provider openstack --control-plane "$LB" "$SKUBA_CLUSTER_NAME"
     fi
 }
 
@@ -192,12 +192,17 @@ _deploy_workers() {
     done
 }
 
+skuba_init() {
+    local KUBECONFIG=""
+    _set_env_vars
+    _init_control_plane
+}
+
 skuba_deploy() {
     # Usage: deploy
 
     local KUBECONFIG=""
     _set_env_vars
-    _init_control_plane
     pushd $(pwd)/
     _deploy_masters "$MASTERS"
     _deploy_workers "$WORKERS"

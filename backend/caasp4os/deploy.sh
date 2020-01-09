@@ -73,6 +73,9 @@ sed -e "s%#~placeholder_stack~#%$(escapeSubst "$STACK")%g" \
     -e "s%#~placeholder_sshkey~#%$(escapeSubst "$SSHKEY")%g" \
     "$ROOT_DIR"/backend/caasp4os/terraform-os/terraform.tfvars.skel > \
     deployment/terraform.tfvars
+# enable cpi
+sed -i '/cpi_enable/s/^#//g' deployment/cpi.auto.tfvars
+# inject our terraform files
 cp -r "$ROOT_DIR"/backend/caasp4os/terraform-os/* deployment/
 
 pushd deployment
@@ -86,6 +89,11 @@ skuba_container terraform apply -auto-approve my-plan
 info "Bootstrapping k8s with skuba…"
 
 skuba_container skuba version
+skuba_init
+# inject cloud/openstack.conf for cpi
+mkdir -p ./my-cluster/cloud/openstack
+cp openstack.conf my-cluster/cloud/openstack/
+# TODO use same node names as in openstack, as the cloud controller manager uses them to reconcile node metadata
 skuba_deploy
 wait
 cp -f ./my-cluster/admin.conf ../kubeconfig
