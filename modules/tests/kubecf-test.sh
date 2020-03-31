@@ -44,6 +44,38 @@ if [ "${KUBECF_TEST_SUITE}" == "smokes" ]; then
     if [[ "${timeout}" == 0 ]]; then return 1; fi
     pod_name="$(smoke_tests_pod_name)"
     container_name="smoke-tests-smoke-tests"
+elif [ "${KUBECF_TEST_SUITE}" == "cats-internetless" ]; then
+
+    info "Patching cats secret to use internetless CATS test suite"
+		cats_secret_name="$(kubectl get qjobs -n "${KUBECF_NAMESPACE}" "${KUBECF_DEPLOYMENT_NAME}"-acceptance-tests -o json | jq -r '.spec.template.spec.template.spec.volumes[] | select(.name=="ig-resolved").secret.secretName')"
+		cats_secret="$(kubectl get secrets --export -n "${KUBECF_NAMESPACE}" "${cats_secret_name}" -o yaml)"
+
+    cats_updated_properties="$(kubectl get secret -n "${KUBECF_NAMESPACE}" "${cats_secret_name}" -o json  | jq -r '.data."properties.yaml"' | base64 -d | yq w - "instance_groups.(name==acceptance-tests).jobs.(name==acceptance-tests).properties.acceptance_tests.include" '=internetless' | base64 -w 0 )"
+    echo $cats_secret
+    echo $cats_updated_properties
+    set -xe
+    cats_updated="$(echo "$cats_secret" | yq w - 'data[properties.yaml]' $cats_updated_properties)"
+    cats_updated="$(echo "$cats_updated" | yq w - 'metadata.name' 'susecf-scf-cats-internetless')"
+    kubectl apply -f <(echo "${cats_updated}") -n "${KUBECF_NAMESPACE}"
+
+    #kubectl patch secret "${cats_secret}" --type='json' -n "${KUBECF_NAMESPACE}" -p='[{"op" : "replace" ,"path" : "/data/properties.yaml" ,"value" : "'"${cats_updated_properties}"'"}]'
+
+    kubectl patch qjob "${KUBECF_DEPLOYMENT_NAME}"-acceptance-tests --namespace "${KUBECF_NAMESPACE}" --type merge --patch 'spec:
+      template:
+        spec:
+          template:
+            spec:
+              volumes:
+              - name: ig-resolved
+                secret:
+                  secretName: susecf-scf-cats-internetless
+      trigger:
+          strategy: now'
+    info "Waiting for the acceptance-tests pod to start..."
+    until cf_acceptance_tests_pod_name || [[ "$timeout" == "0" ]]; do sleep 1; timeout=$((timeout - 1)); done
+    if [[ "${timeout}" == 0 ]]; then return 1; fi
+    pod_name="$(cf_acceptance_tests_pod_name)"
+    container_name="acceptance-tests-acceptance-tests"
 elif [ "${KUBECF_TEST_SUITE}" == "sits" ]; then
     kubectl patch qjob "${KUBECF_DEPLOYMENT_NAME}"-sync-integration-tests --namespace "${KUBECF_NAMESPACE}" --type merge --patch 'spec:
       trigger:
