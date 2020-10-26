@@ -11,7 +11,7 @@ fi
 
 gcloudpath=bin/gcloud
 if [ ! -e "$gcloudpath" ]; then
-    curl -o google-cloud-sdk.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-264.0.0-linux-x86_64.tar.gz
+    curl -Lo google-cloud-sdk.tar.gz "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz"
     tar -xf google-cloud-sdk.tar.gz
     rm google-cloud-sdk.tar.gz
     pushd google-cloud-sdk || exit
@@ -23,9 +23,9 @@ fi
 terraformpath=bin/terraform
 if [ ! -e "$terraformpath" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        curl -o terraform.zip https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_darwin_amd64.zip
+        curl -o terraform.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_darwin_amd64.zip"
     else
-        curl -o terraform.zip https://releases.hashicorp.com/terraform/0.12.29/terraform_0.12.29_linux_amd64.zip
+        curl -o terraform.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
     fi
     unzip terraform.zip && rm -rf terraform.zip
     chmod +x terraform && mv terraform bin/

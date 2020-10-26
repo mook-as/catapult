@@ -5,6 +5,11 @@
 
 OWNER="${OWNER:-$(whoami)}"
 
+# Tool versions
+###############
+GCLOUD_VERSION="${GCLOUD_VERSION:-315.0.0}"
+TERRAFORM_VERSION="${TERRAFORM_VERSION:-0.12.29}"
+
 # GKE options
 #############
 
